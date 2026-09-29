@@ -1,5 +1,9 @@
 FROM n8nio/n8n:latest
 
-EXPOSE 10000
+USER root
 
-CMD ['n8n','start']
+ENV PORT=10000
+
+ENV N8N_DATA_FOLDER=/home/node/.n8n
+
+ENTRYPOINT ['n8n','start']
