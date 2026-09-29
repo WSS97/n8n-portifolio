@@ -6,4 +6,4 @@ ENV PORT=10000
 
 ENV N8N_DATA_FOLDER=/home/node/.n8n
 
-ENTRYPOINT ['n8n','start']
+CMD n8n , start
