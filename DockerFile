@@ -1,9 +1,14 @@
-FROM n8nio/n8n:latest
+FROM node:18-alpine
 
-USER root
+# Instala o n8n globalmente dentro do container
+RUN npm install -g n8n
 
+# Cria e define a pasta de dados do n8n
+WORKDIR /data
+
+# Define a porta padrão exigida pelo Render
 ENV PORT=10000
+ENV N8N_PORT=10000
 
-ENV N8N_DATA_FOLDER=/home/node/.n8n
-
-CMD n8n , start
+# Executa o n8n usando a sintaxe de vetor direta (sem depender de /bin/sh)
+ENTRYPOINT ["n8n", "start"]
