@@ -1,17 +1,6 @@
 {
   "nodes": [
     {
-      "parameters": {},
-      "type": "n8n-nodes-base.manualTrigger",
-      "typeVersion": 1,
-      "position": [
-        0,
-        0
-      ],
-      "id": "ddfb54e5-c26d-46df-9102-ff6cb56f20ee",
-      "name": "When clicking ‘Execute workflow’"
-    },
-    {
       "parameters": {
         "operation": "executeQuery",
         "query": "SELECT p.id_cliente, c.nome AS nome_cliente, SUM(p.valor_pedido) AS total_gasto_historico\nFROM pedidos AS p INNER JOIN clientes AS c\nON p.id_cliente=c.id GROUP BY p.id_cliente, c.nome\nHAVING p.id_cliente NOT IN(\n  SELECT DISTINCT id_cliente FROM pedidos WHERE ano_pedido = 2026\n)",
@@ -20,7 +9,7 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
-        208,
+        240,
         0
       ],
       "id": "0a5e1304-14d1-497a-9597-28d27885fc7f",
@@ -41,7 +30,7 @@
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 3.1,
       "position": [
-        416,
+        448,
         0
       ],
       "id": "960c50cd-94fa-4430-a939-1e2795e39124",
@@ -56,7 +45,7 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
       "typeVersion": 1,
       "position": [
-        416,
+        448,
         240
       ],
       "id": "3a5d67c2-9989-464f-a46a-a4e3d1df6785",
@@ -83,25 +72,56 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        752,
-        16
+        800,
+        80
       ],
       "id": "8a995fcb-5303-49ba-89d8-9849514a3414",
       "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO logs_churn(cliente_id, nome_cliente, categoria_cliente, codigo_cupom, texto_email ) VALUES(\n  '{{ JSON.parse($json.output.match(/\\{[\\s\\S]*\\}/)).cliente_id }}',\n  '{{ JSON.parse($json.output.match(/\\{[\\s\\S]*\\}/)).nome_cliente }}',\n  '{{ JSON.parse($json.output.match(/\\{[\\s\\S]*\\}/)).categoria_cliente }}',\n  '{{ JSON.parse($json.output.match(/\\{[\\s\\S]*\\}/)).codigo_cupom }}',\n  '{{ JSON.parse($json.output.match(/\\{[\\s\\S]*\\}/)).texto_email.replace(/'/g, \"' '\") }}'\n)",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        800,
+        -96
+      ],
+      "id": "f5caf6af-656b-4818-9b70-3e3688bde9d6",
+      "name": "Execute a SQL query1",
+      "credentials": {
+        "postgres": {
+          "id": "k4MtGCeQkHinX9XK",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "triggerAtHour": 8
+            },
+            {}
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        32,
+        0
+      ],
+      "id": "bce9ce2a-3e5d-44f1-a60b-3fda40151d0b",
+      "name": "Schedule Trigger"
     }
   ],
   "connections": {
-    "When clicking ‘Execute workflow’": {
-      "main": [
-        [
-          {
-            "node": "Execute a SQL query",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
     "Execute a SQL query": {
       "main": [
         [
@@ -117,7 +137,17 @@
       "main": [
         [
           {
+            "node": "Execute a SQL query1",
+            "type": "main",
+            "index": 0
+          },
+          {
             "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Execute a SQL query",
             "type": "main",
             "index": 0
           }
@@ -133,6 +163,16 @@
             "index": 0
           }
         ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        []
+      ]
+    },
+    "Execute a SQL query1": {
+      "main": [
+        []
       ]
     }
   },
