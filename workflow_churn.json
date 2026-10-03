@@ -1,0 +1,144 @@
+{
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "ddfb54e5-c26d-46df-9102-ff6cb56f20ee",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT p.id_cliente, c.nome AS nome_cliente, SUM(p.valor_pedido) AS total_gasto_historico\nFROM pedidos AS p INNER JOIN clientes AS c\nON p.id_cliente=c.id GROUP BY p.id_cliente, c.nome\nHAVING p.id_cliente NOT IN(\n  SELECT DISTINCT id_cliente FROM pedidos WHERE ano_pedido = 2026\n)",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        208,
+        0
+      ],
+      "id": "0a5e1304-14d1-497a-9597-28d27885fc7f",
+      "name": "Execute a SQL query",
+      "credentials": {
+        "postgres": {
+          "id": "k4MtGCeQkHinX9XK",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Você é um analista de CRM e retenção de clientes sênior.\nSeu objetivo é analisar os dados de {{ $json.nome_cliente }} e gerar uma abordagem de e-mail altamente personalizada de engajamento e cupom de desconto.\n\nRegras de tamanho e tom do e-mail:\n- O e-mail deve ser curto, direto ao ponto e objetivo.\n- Tenha no máximo 2 ou 3 parágrafos curtos.\n- Evite enrolações ou textos longos demais. O foco deve ser a oportunidade do desconto.\n\nRegras de negócio da empresa para criação do cupom:\n- Se o cliente {{ $json.nome_cliente }} tiver um gasto total histórico de R$ {{ $json.total_gasto_historico }} e esse valor for maior ou igual a R$ 500, ele é considerado VIP. Gere um cupom de 20% de desconto chamado RECONECTAR20.\n- Se o cliente {{ $json.nome_cliente }} tiver um gasto total histórico de R$ {{ $json.total_gasto_historico }} e esse valor for menor que R$ 500, ele é um cliente comum. Gere um cupom de 10% de desconto chamado BEMVINDO10.\n\nAtenção Crucial sobre o JSON final:\n- No campo \"cliente_id\", use exatamente o número que veio do banco de dados. Nunca invente outro código.\n\nNo final da sua resposta, gere um JSON estruturado com o seguinte formato exato para que possamos enviar via API depois:\n{\n  \"cliente_id\": {{ $json.id_cliente }},\n  \"nome_cliente\": \"{{ $json.nome_cliente }}\",\n  \"categoria_cliente\": \"VIP ou Comum\",\n  \"codigo_cupom\": \"CODIGO_DO_CUPOM\",\n  \"texto_email\": \"Texto completo do e-mail de retenção gerado por você\"\n}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        416,
+        0
+      ],
+      "id": "960c50cd-94fa-4430-a939-1e2795e39124",
+      "name": "AI Agent",
+      "retryOnFail": false
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-oss-20b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        416,
+        240
+      ],
+      "id": "3a5d67c2-9989-464f-a46a-a4e3d1df6785",
+      "name": "Groq Chat Model",
+      "alwaysOutputData": false,
+      "executeOnce": false,
+      "retryOnFail": false,
+      "credentials": {
+        "groqApi": {
+          "id": "mPjsz8PITSFwBkH1",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://webhook.site/5829f77e-c1d2-40b4-a632-6b8f3a92f541",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.parse($json.output.match(/\\{[\\s\\S]*\\}/)[0]) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        752,
+        16
+      ],
+      "id": "8a995fcb-5303-49ba-89d8-9849514a3414",
+      "name": "HTTP Request"
+    }
+  ],
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "214b50309174c09a5b6ecf5395040c2eef2ecfc7b3e01a3dc32cf931245e4d7a"
+  }
+}

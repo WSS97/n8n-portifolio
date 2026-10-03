@@ -1,17 +1,16 @@
-version: '3.8'
 
 services:
   n8n:
-    image: n8n:n8nio/n8n:latest
-    container-name: n8n_portifolio
+    image: n8nio/n8n:latest
+    container_name: n8n_portifolio
     restart: always
     ports:
       - "5678:5678"
-    evironment:
+    environment:
       - N8N_ENCRYPTION_KEY=${N8N_ENV_KEY}
       - N8N_USER_MANAGEMENT_DISABLED=${N8N_ENV_SET}
     volumes:
-      - n8n_data: /home/node/.n8n
+      - n8n_data:/home/node/.n8n
 
 volumes:
  n8n_data:
