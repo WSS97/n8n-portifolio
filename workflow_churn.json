@@ -3,7 +3,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT p.id_cliente, c.nome AS nome_cliente, SUM(p.valor_pedido) AS total_gasto_historico\nFROM pedidos AS p INNER JOIN clientes AS c\nON p.id_cliente=c.id GROUP BY p.id_cliente, c.nome\nHAVING p.id_cliente NOT IN(\n  SELECT DISTINCT id_cliente FROM pedidos WHERE ano_pedido = 2026\n)",
+        "query": "SELECT\n  c.nome AS cliente,\n  c.email,\n  SUM(p.valor_pedido) AS total_gasto_historico,\n  MAX(p.data_pedido) AS ultim_compra\nFROM pedidos AS p\nINNER JOIN clientes AS c ON p.id_cliente=c.id\nGROUP BY p.id_cliente, c.nome, c.email\nHAVING MAX(p.data_pedido) <= CURRENT_DATE - INTERVAL '120 days'",
         "options": {}
       },
       "type": "n8n-nodes-base.postgres",
@@ -145,11 +145,6 @@
             "node": "HTTP Request",
             "type": "main",
             "index": 0
-          },
-          {
-            "node": "Execute a SQL query",
-            "type": "main",
-            "index": 0
           }
         ]
       ]
@@ -173,6 +168,17 @@
     "Execute a SQL query1": {
       "main": [
         []
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     }
   },
