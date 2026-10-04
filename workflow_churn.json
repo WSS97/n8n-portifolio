@@ -3,7 +3,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT\n  c.nome AS cliente,\n  c.email,\n  SUM(p.valor_pedido) AS total_gasto_historico,\n  MAX(p.data_pedido) AS ultim_compra\nFROM pedidos AS p\nINNER JOIN clientes AS c ON p.id_cliente=c.id\nGROUP BY p.id_cliente, c.nome, c.email\nHAVING MAX(p.data_pedido) <= CURRENT_DATE - INTERVAL '120 days'",
+        "query": "SELECT\n  id_cliente,\n  c.nome AS cliente,\n  c.email,\n  SUM(p.valor_pedido) AS total_gasto_historico,\n  MAX(p.data_pedido) AS ultim_compra\nFROM pedidos AS p\nINNER JOIN clientes AS c ON p.id_cliente=c.id\nGROUP BY p.id_cliente, c.nome, c.email\nHAVING MAX(p.data_pedido) <= CURRENT_DATE - INTERVAL '120 days'",
         "options": {}
       },
       "type": "n8n-nodes-base.postgres",
@@ -24,8 +24,10 @@
     {
       "parameters": {
         "promptType": "define",
-        "text": "=Você é um analista de CRM e retenção de clientes sênior.\nSeu objetivo é analisar os dados de {{ $json.nome_cliente }} e gerar uma abordagem de e-mail altamente personalizada de engajamento e cupom de desconto.\n\nRegras de tamanho e tom do e-mail:\n- O e-mail deve ser curto, direto ao ponto e objetivo.\n- Tenha no máximo 2 ou 3 parágrafos curtos.\n- Evite enrolações ou textos longos demais. O foco deve ser a oportunidade do desconto.\n\nRegras de negócio da empresa para criação do cupom:\n- Se o cliente {{ $json.nome_cliente }} tiver um gasto total histórico de R$ {{ $json.total_gasto_historico }} e esse valor for maior ou igual a R$ 500, ele é considerado VIP. Gere um cupom de 20% de desconto chamado RECONECTAR20.\n- Se o cliente {{ $json.nome_cliente }} tiver um gasto total histórico de R$ {{ $json.total_gasto_historico }} e esse valor for menor que R$ 500, ele é um cliente comum. Gere um cupom de 10% de desconto chamado BEMVINDO10.\n\nAtenção Crucial sobre o JSON final:\n- No campo \"cliente_id\", use exatamente o número que veio do banco de dados. Nunca invente outro código.\n\nNo final da sua resposta, gere um JSON estruturado com o seguinte formato exato para que possamos enviar via API depois:\n{\n  \"cliente_id\": {{ $json.id_cliente }},\n  \"nome_cliente\": \"{{ $json.nome_cliente }}\",\n  \"categoria_cliente\": \"VIP ou Comum\",\n  \"codigo_cupom\": \"CODIGO_DO_CUPOM\",\n  \"texto_email\": \"Texto completo do e-mail de retenção gerado por você\"\n}",
-        "options": {}
+        "text": "=Processe o seguinte cliente e retorne o JSON preenchido:\n\n- id_cliente: {{ $json.id_cliente }}\n- cliente: {{ $json.cliente }}\n- total_gasto_historico: {{ $json.total_gasto_historico }}",
+        "options": {
+          "systemMessage": "Você é um analista de CRM sênior especializado em retenção e e-commerce.\nSua única tarefa é processar os dados do cliente e responder estritamente com um objeto JSON válido, sem qualquer texto introdutório, sem explicações e sem blocos de markdown (como ```json).\n\nRegras de Negócio para o Cupom:\n1. Se total_gasto_historico >= 500:\n   - categoria_cliente = \"VIP\"\n   - codigo_cupom = \"RECONECTAR20\" (20% de desconto)\n2. Se total_gasto_historico < 500:\n   - categoria_cliente = \"Comum\"\n   - codigo_cupom = \"VOLTA10\" (10% de desconto)\n\nRegras do E-mail (campo 'texto_email'):\n- Tom curto, direto, objetivo e focado no desconto.\n- Máximo de 2 a 3 parágrafos curtos.\n- Mencione que a oferta é exclusiva para o retorno do cliente ou em agradecimento por sua presença.\n- Use quebras de linha estandardizadas (\\n) para separar os parágrafos dentro da string JSON.\n\nEstrutura JSON de saída:\n{\n  \"cliente_id\": 0,\n  \"nome_cliente\": \"\",\n  \"categoria_cliente\": \"\",\n  \"codigo_cupom\": \"\",\n  \"texto_email\": \"\"\n}"
+        }
       },
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 3.1,
@@ -114,7 +116,7 @@
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.3,
       "position": [
-        32,
+        -16,
         0
       ],
       "id": "bce9ce2a-3e5d-44f1-a60b-3fda40151d0b",
@@ -172,13 +174,7 @@
     },
     "Schedule Trigger": {
       "main": [
-        [
-          {
-            "node": "Execute a SQL query",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        []
       ]
     }
   },
